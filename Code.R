@@ -38,7 +38,7 @@ testing <- training[-inTrain,]
 # Training model with RandomForest
 model <- randomForest(classe~., data=training, method='class')
 # Predict data
-pred = predict(model,testing,type='class') 
+pred <- predict(model,testing,type='class') 
 
 # Plot Data
 training %>%

@@ -89,6 +89,8 @@ training %>%
   ggplot(aes(x = roll_belt, y = magnet_dumbbell_y, col = classe)) +
   geom_point(alpha = 0.5) +
   theme_tufte()
+
+confusionMatrix(pred, testing$classe)[2]
 ````
 
 ## Using our model
