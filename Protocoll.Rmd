@@ -1,0 +1,101 @@
+---
+title: 'Project : Coursera - Practical Machine Learning'
+author: "Christian Spakowski"
+date: "20 August 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.
+
+## Data
+
+The training data for this project are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+
+The data for this project come from this source: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+## Loading Libraries and the Data
+
+````{r Preparation, echo = T, message = F, warning = F}
+# Loading libraries
+library(caret)
+library(randomForest)
+library(ggplot2)
+library(ggthemes)
+library(dplyr)
+
+
+# Load Data
+training <- read.csv("pml-training.csv", na.strings = c("NA", "#DIV/0!", ""))
+validating <- read.csv("pml-testing.csv",na.strings=c("NA","#DIV/0!"))
+````
+
+## Data Cleaning
+
+Inspecting the data shows, that many columns contain many NA values. First we write a function to remove these columns from the data. Moreover we will remove columns that will not be helpful for model training like Username etc. Finally we will transform the prediction column to categorical data.
+
+````{r Data Cleaning}
+# Write Function to remove NA Cols
+remove_NAcols <- function(data) {
+  # Find Cols with NA vlaues
+  NAcols_count <- sapply(1:dim(data)[2],function(x) sum(is.na(data[,x])))
+  NAcols <- which(NAcols_count > 0)
+  
+  return(data[,-NAcols])
+}
+
+# Remove NA columns
+training <- remove_NAcols(training)
+validating <- remove_NAcols(validating)
+
+# Remove uninteresting Columns like user name etc.
+training <- training[,-c(1:7)]
+validating <- validating[,-c(1:7)]
+
+# Transform classe Col to factor
+training$classe <- factor(training$classe)
+````
+
+## Model Training 
+
+We will use a Random Forest Classifier to fit the data. First we will split the Training data so that we can later quantify the performance of our model. Then we will fit our data via RandomForest Classification and then evaluate the performance. 
+
+````{r model fitting and Evaluation}
+# Set seed and split training data into training and test data
+set.seed(1986)
+inTrain <- createDataPartition(y=training$classe, p=0.6, list=FALSE)
+training <-training[inTrain,]
+testing <- training[-inTrain,]
+
+# Training model with RandomForest
+model <- randomForest(classe~., data=training, method='class')
+# Predict data
+pred <- predict(model,testing,type='class') 
+
+# Plot Data
+training %>%
+  ggplot(aes(x = roll_belt, y = magnet_dumbbell_y, col = classe)) +
+  geom_point(alpha = 0.5) +
+  theme_tufte()
+````
+
+## Using our model
+
+Finally we use our model to predict data, that our model has not seen yet. 
+
+````{r Prediction}
+pred_test <-  predict(model, validating, type='class')
+pred_test
+````
